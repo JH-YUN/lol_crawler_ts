@@ -6,23 +6,9 @@ import fs from 'fs';
 import { exit } from "process";
 
 const hostUrl: string = 'https://www.op.gg/champion/';
-// 프로미스로 3개씩 처리
-async function startP() {
-    const champions = JSON.parse(fs.readFileSync('data/champion.json', 'utf-8')).data;
-    const broswer = await chromium.launch();
 
-    for (const championArr of championsToArray(champions, 3)) {
-        const promise = [];
-        for (const champion of championArr) {
-            promise.push(getChampionData(champion.id, champion.key, await broswer.newPage()));
-        }
-        await Promise.all(promise);
-    }
-    await broswer.close();
-
-}
 // 프로미스로 최대 n개까지 동시처리
-async function start2() {
+async function start1() {
     interface Champion {
         id?: string,
         key?: number,
@@ -423,5 +409,4 @@ async function test() {
     await broswer.close();
 }
 
-start2();
-// test();
+start1();
