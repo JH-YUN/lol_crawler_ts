@@ -5,6 +5,7 @@ import _ from 'lodash';
 import fs from 'fs';
 import {champion, championDetail, skillDetail, masterOrder, first3Order, runeSummary, runeDetail, rune, coreItem, startItem, shoe, Champion} from './interface';
 import { exit } from "process";
+import * as firebase from './firebase';
 
 const hostUrl: string = 'https://www.op.gg/champion/';
 
@@ -101,12 +102,12 @@ async function getChampionData(championId: string, championKey: number, page: Pa
         champion[pos] = championDetail;
     }
     
-    fs.writeFile(`result/${championId}.json`, JSON.stringify(champion), (err) => {
-        if (err) {
-            console.log(err);
-        }
-    })
-
+    // fs.writeFile(`result/${championId}.json`, JSON.stringify(champion), (err) => {
+    //     if (err) {
+    //         console.log(err);
+    //     }
+    // })
+    firebase.test(champion);
     await page.close();
 }
 
@@ -337,8 +338,9 @@ async function test() {
 
     // await page.goto(url);
     // const result = await getItem('lulu',117, 'SUPPORT', page);
-    const result = await getPostion('lulu', page);
-    console.log(result);
+    // const result = await getPostion('lulu', page);
+    await getChampionData('lulu', 117, page);
+    // console.log(result);
 
     await broswer.close();
 }
