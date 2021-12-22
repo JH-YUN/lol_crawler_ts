@@ -12,3 +12,5 @@
 /data
 /.vscode
 .editorconfig
+/key
+/result*

@@ -3,16 +3,14 @@ import axios from 'axios';
 import cheerio from 'cheerio';
 import _ from 'lodash';
 import fs from 'fs';
+import {champion, championDetail, skillDetail, masterOrder, first3Order, runeSummary, runeDetail, rune, coreItem, startItem, shoe, Champion} from './interface';
 import { exit } from "process";
 
 const hostUrl: string = 'https://www.op.gg/champion/';
 
 // 프로미스로 최대 n개까지 동시처리
 async function start1() {
-    interface Champion {
-        id?: string,
-        key?: number,
-    }
+    
     let champions: Champion[] = Object.values(JSON.parse(fs.readFileSync('data/champion.json', 'utf-8')).data);
     const broswer = await chromium.launch();
     const maxCnt = 3; // 동시 처리할 갯수
@@ -79,26 +77,10 @@ async function start() {
 }
 
 async function getChampionData(championId: string, championKey: number, page: Page) {
-    interface champion {
-        [index: string]: any;
-        id: string;
-        position: any;
-        TOP?: championDetail;
-        JUNGLE?: championDetail;
-        MID?: championDetail;
-        ADC?: championDetail;
-        SUPPORT?: championDetail;
-    }
-    interface championDetail {
-        rune: object[];
-        skill: object;
-        item: object;
-        spell: string[];
-    }
-
     let champion: champion = {
         id: championId,
         position: [],
+        version: '',
     };
     let championDetail: championDetail;
 
@@ -107,9 +89,9 @@ async function getChampionData(championId: string, championKey: number, page: Pa
             ? route.abort() : route.continue();
     });
 
-    const position = await getPostion(championId, page);
-    champion.position = position;
-
+    const {position, version} = await getPostion(championId, page);
+    champion.version = version;
+    
     for (const pos of position) {
         let championDetail = {} as championDetail;
         championDetail.spell = await getSpell(championId, pos, page);
@@ -117,9 +99,8 @@ async function getChampionData(championId: string, championKey: number, page: Pa
         championDetail.rune = await getRune(championId, championKey, pos, page);
         championDetail.item = await getItem(championId, championKey, pos, page);
         champion[pos] = championDetail;
-        // console.log(championDetail);
     }
-    // console.log(champion);
+    
     fs.writeFile(`result/${championId}.json`, JSON.stringify(champion), (err) => {
         if (err) {
             console.log(err);
@@ -134,8 +115,9 @@ async function getPostion(championId: string, page: Page) {
 
     await page.goto(url);
     const position = await page.$$eval('.champion-stats-header__position', node => node.map(el => el.dataset.position!));
+    const version = await page.$eval('.champion-stats-header-version', node =>  /\:(.*)/.exec(node.textContent!)![1].trim());
 
-    return position;
+    return {position, version};
 }
 
 async function getSpell(championId: string, position: string, page: Page) {
@@ -150,20 +132,6 @@ async function getSpell(championId: string, position: string, page: Page) {
 async function getSkill(championId: string, championKey: number, position: string, page: Page) {
     const url = `${hostUrl}${championId}/statistics/${position}/skill`;
     const url2 = `${hostUrl}ajax/statistics/skillList/championId=${championKey}&position=${position}`;
-
-    interface skillDetail {
-        masterOrder: masterOrder[];
-        first3Order: first3Order[];
-    }
-    interface masterOrder {
-        order: string;
-        pickRate: string;
-        winRate: string;
-    }
-    interface first3Order {
-        order: string;
-        pickRate: string;
-    }
 
     // 마스터 순서
     let skillDetail = {
@@ -221,24 +189,6 @@ async function getSkill(championId: string, championKey: number, position: strin
 
 async function getRune(championId: string, championKey: number, position: string, page: Page) {
     const url = `${hostUrl}${championId}/statistics/${position}/rune`;
-
-    interface runeSummary {
-        mainRune: string,
-        subRune: string,
-        pickRate: string,
-        winRate: string,
-    }
-    interface runeDetail {
-        main: string[],
-        sub: string[],
-        chip: string[],
-        pickRate: string,
-        winRate: string,
-    }
-    interface rune {
-        summary: runeSummary,
-        detail: runeDetail[],
-    }
 
     // 룬 요약정보 가져오기
     await page.goto(url);
@@ -300,22 +250,6 @@ async function getRune(championId: string, championKey: number, position: string
 
 async function getItem(championId: string, championKey: number, position: string, page: Page) {
     const url = `${hostUrl}${championId}/statistics/${position}/item`;
-
-    interface coreItem {
-        items: string[],
-        pickRate: string,
-        winRate: string,
-    }
-    interface startItem {
-        items: string[],
-        pickRate: string,
-        winRate: string,
-    }
-    interface shoe {
-        item: string,
-        pickRate: string,
-        winRate: string,
-    }
 
     const coreItems: coreItem[] = [];
     const startItems: startItem[] = [];
@@ -409,4 +343,4 @@ async function test() {
     await broswer.close();
 }
 
-start1();
+test();
