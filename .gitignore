@@ -14,3 +14,4 @@
 .editorconfig
 /key
 /result*
+/dist

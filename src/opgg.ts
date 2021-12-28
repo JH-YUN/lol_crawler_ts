@@ -1,6 +1,6 @@
+import cheerio from 'cheerio';
 import { chromium, firefox, Browser, Page } from "playwright";
 import axios from 'axios';
-import cheerio from 'cheerio';
 import _ from 'lodash';
 import fs from 'fs';
 import {champion, championDetail, skillDetail, masterOrder, first3Order, runeSummary, runeDetail, rune, coreItem, startItem, shoe, Champion} from './interface';
@@ -10,12 +10,13 @@ import * as firebase from './firebase';
 const hostUrl: string = 'https://www.op.gg/champion/';
 
 // 프로미스로 최대 n개까지 동시처리
-async function start1() {
-    
+export async function run() {
     let champions: Champion[] = Object.values(JSON.parse(fs.readFileSync('data/champion.json', 'utf-8')).data);
     const broswer = await chromium.launch();
     const maxCnt = 3; // 동시 처리할 갯수
     let currentCnt = 0;
+
+    await firebase.init(); // 파이어베이스 초기화
 
     while (champions.length > 0) {
         if (currentCnt >= maxCnt) {
@@ -55,27 +56,27 @@ function getChampionDataPromies(championId: string, championKey: number, page: P
 }
 
 // 하나씩 처리
-async function start() {
-    const champions = JSON.parse(fs.readFileSync('data/champion.json', 'utf-8')).data;
-    const broswer = await chromium.launch();
+// async function start() {
+//     const champions = JSON.parse(fs.readFileSync('data/champion.json', 'utf-8')).data;
+//     const broswer = await chromium.launch();
 
-    for (const championId in champions) {
-        const champion = champions[championId];
-        const championKey = champion.key;
-        const page = await broswer.newPage();
+//     for (const championId in champions) {
+//         const champion = champions[championId];
+//         const championKey = champion.key;
+//         const page = await broswer.newPage();
 
-        console.log(`====== ${championId} 작업시작 ======`);
-        try {
-            await getChampionData(championId, championKey, page);
-        } catch (e) {
-            console.log(e);
-            console.log(`${championId} 작업중 오류발생`);
-        }
+//         console.log(`====== ${championId} 작업시작 ======`);
+//         try {
+//             await getChampionData(championId, championKey, page);
+//         } catch (e) {
+//             console.log(e);
+//             console.log(`${championId} 작업중 오류발생`);
+//         }
 
-        page.close();
-    }
-    await broswer.close();
-}
+//         page.close();
+//     }
+//     await broswer.close();
+// }
 
 async function getChampionData(championId: string, championKey: number, page: Page) {
     let champion: champion = {
@@ -92,6 +93,7 @@ async function getChampionData(championId: string, championKey: number, page: Pa
 
     const {position, version} = await getPostion(championId, page);
     champion.version = version;
+    champion.position = position;
     
     for (const pos of position) {
         let championDetail = {} as championDetail;
@@ -102,12 +104,7 @@ async function getChampionData(championId: string, championKey: number, page: Pa
         champion[pos] = championDetail;
     }
     
-    // fs.writeFile(`result/${championId}.json`, JSON.stringify(champion), (err) => {
-    //     if (err) {
-    //         console.log(err);
-    //     }
-    // })
-    firebase.test(champion);
+    await firebase.setChampionData(champion);
     await page.close();
 }
 
@@ -344,5 +341,3 @@ async function test() {
 
     await broswer.close();
 }
-
-test();

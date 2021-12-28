@@ -3,25 +3,17 @@ import { getFirestore, Timestamp, FieldValue } from 'firebase-admin/firestore';
 
 import {champion, championDetail, skillDetail, masterOrder, first3Order, runeSummary, runeDetail, rune, coreItem, startItem, shoe, Champion} from './interface';
 
-function init() {
+let db : FirebaseFirestore.Firestore;
+
+export function init() {
     const serviceAccount = require('../key/firebase-key.json');
     initializeApp({
         credential: cert(serviceAccount)
     });
-    const db = getFirestore();
+    db = getFirestore();
 }
 
-function addChampion(champion: champion) {
-    
-}
-
-export async function test(champion: any) {
-    const serviceAccount = require('../key/firebase-key.json');
-    initializeApp({
-        credential: cert(serviceAccount)
-    });
-    const db = getFirestore();
-
-    await db.collection('test2').doc(champion.id).set(champion);
+export async function setChampionData(champion: any) {
+    await db.collection('champions').doc(champion.id).set(champion);
 }
 
